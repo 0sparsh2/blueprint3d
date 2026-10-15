@@ -466,7 +466,13 @@ var AssetStudio = function() {
     form.append("workflow", $("#studio-workflow").val());
     $.ajax({ url: endpoint, method: "POST", data: form, processData: false, contentType: false })
       .done(function(job) { pollJob(job.id || job.jobId); })
-      .fail(function() { setStatus("Worker upload failed.", "text-danger"); stopTimer(); $("#studio-start").prop("disabled", false); });
+      .fail(function(xhr) {
+        var message = "Worker upload failed.";
+        try { if (xhr.responseJSON && xhr.responseJSON.message) message = xhr.responseJSON.message; } catch (e) {}
+        setStatus(message, "text-danger");
+        stopTimer();
+        $("#studio-start").prop("disabled", false);
+      });
   }
 
   $("#studio-image").change(function() {

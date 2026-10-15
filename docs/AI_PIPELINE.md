@@ -30,6 +30,8 @@ The terminal response is `status: "complete"` or `status: "error"`. A complete a
 
 The current browser fallback intentionally simulates stages when no endpoint is configured. It demonstrates the UX without claiming that a model ran.
 
+The included local worker lives at `ai-worker/server.py` and is configured by the example app to use `http://127.0.0.1:8001/api/jobs`. It runs Hunyuan3D-2mini through the native MLX shape pipeline and saves a generated shape GLB into `example/models/ai/`. The MLX worker currently stops after geometry export; PBR texture painting remains a separate CUDA/Kaggle stage.
+
 ## Local and Kaggle execution
 
 For local execution, a small Python service can call `rembg` (or another matting model), Hunyuan3D-MLX on Apple Silicon, or a CUDA Hunyuan3D install, then write the GLB into the app's asset directory. The existing `kaggle/hunyuan3d-gpu/run.py` is a batch worker and can be adapted to the same job contract when a GPU notebook is available.
