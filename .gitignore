@@ -11,6 +11,7 @@ build
 kaggle/output/
 hunyuan3d-mlx/
 ai-worker/__pycache__/
+ai-worker/jobs/
 
 .vscode
 bin

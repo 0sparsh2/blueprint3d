@@ -30,7 +30,7 @@ The terminal response is `status: "complete"` or `status: "error"`. A complete a
 
 The current browser fallback intentionally simulates stages when no endpoint is configured. It demonstrates the UX without claiming that a model ran.
 
-The included local worker lives at `ai-worker/server.py` and is configured by the example app to use `http://127.0.0.1:8001/api/jobs`. It runs Hunyuan3D-2mini through the native MLX shape pipeline and saves a generated shape GLB into `example/models/ai/`. The MLX worker currently stops after geometry export; PBR texture painting remains a separate CUDA/Kaggle stage.
+The included worker lives at `ai-worker/server.py` and is configured by the example app to use `http://127.0.0.1:8001/api/jobs`. It defaults to the authenticated Kaggle CLI: the uploaded image is versioned into the private furniture dataset, the NVIDIA kernel is started, and its GLB output is downloaded into `example/models/ai/`. Set `AI_BACKEND=mlx` to use the native MLX shape pipeline locally instead. Both backends currently stop at geometry export; PBR texture painting remains a separate stage.
 
 ## Local and Kaggle execution
 
