@@ -1,0 +1,15 @@
+{
+  "id": "sparshnagpal/hunyuan3d-gpu-smoke-test",
+  "title": "Hunyuan3D GPU Smoke Test",
+  "code_file": "run.py",
+  "language": "python",
+  "kernel_type": "script",
+  "is_private": "true",
+  "enable_gpu": "true",
+  "enable_internet": "true",
+  "machine_shape": "NvidiaTeslaT4",
+  "dataset_sources": ["sparshnagpal/furniture-image"],
+  "competition_sources": [],
+  "kernel_sources": [],
+  "model_sources": []
+}

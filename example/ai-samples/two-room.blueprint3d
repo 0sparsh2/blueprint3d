@@ -1,0 +1,64 @@
+{
+  "floorplan": {
+    "corners": {
+      "a": {
+        "x": 0,
+        "y": 0
+      },
+      "b": {
+        "x": 400,
+        "y": 0
+      },
+      "c": {
+        "x": 800,
+        "y": 0
+      },
+      "d": {
+        "x": 800,
+        "y": 500
+      },
+      "e": {
+        "x": 400,
+        "y": 500
+      },
+      "f": {
+        "x": 0,
+        "y": 500
+      }
+    },
+    "walls": [
+      {
+        "corner1": "a",
+        "corner2": "b"
+      },
+      {
+        "corner1": "b",
+        "corner2": "c"
+      },
+      {
+        "corner1": "c",
+        "corner2": "d"
+      },
+      {
+        "corner1": "d",
+        "corner2": "e"
+      },
+      {
+        "corner1": "e",
+        "corner2": "f"
+      },
+      {
+        "corner1": "f",
+        "corner2": "a"
+      },
+      {
+        "corner1": "b",
+        "corner2": "e"
+      }
+    ],
+    "wallTextures": [],
+    "floorTextures": {},
+    "newFloorTextures": {}
+  },
+  "items": []
+}

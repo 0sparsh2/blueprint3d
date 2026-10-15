@@ -12,8 +12,8 @@
     <script src="js/jquery.js"></script>
     <script src="js/bootstrap.js"></script>
     
-    <script src="js/items.js"></script>
-    <script src="js/example.js"></script>
+    <script src="js/items.js?v=8"></script>
+    <script src="js/example.js?v=9"></script>
   </head>
 
   <body>
@@ -34,6 +34,10 @@
             </a></li>
             <li id="items_tab"><a href="#">
               Add Items
+              <span class="glyphicon glyphicon-chevron-right pull-right"></span>
+            </a></li>
+            <li id="studio_tab"><a href="#">
+              AI Studio
               <span class="glyphicon glyphicon-chevron-right pull-right"></span>
             </a></li>
           </ul>
@@ -99,6 +103,21 @@
                     <img alt="Thumbnail light fine wood" src="rooms/thumbnails/thumbnail_light_fine_wood.jpg" />
                   </a>
                 </div>
+                <div class="col-sm-6" style="padding: 3px">
+                  <a href="#" class="thumbnail texture-select-thumbnail" texture-url="rooms/textures/marbletiles.jpg" texture-stretch="false" texture-scale="180">
+                    <img alt="Thumbnail white marble tile" src="rooms/thumbnails/thumbnail_marbletiles.jpg" />
+                  </a>
+                </div>
+                <div class="col-sm-6" style="padding: 3px">
+                  <a href="#" class="thumbnail texture-select-thumbnail" texture-url="rooms/textures/white-marbletiles.jpg" texture-stretch="false" texture-scale="180">
+                    <img alt="Thumbnail bright white marble tile" src="rooms/thumbnails/thumbnail_white-marbletiles.jpg" />
+                  </a>
+                </div>
+                <div style="clear: both; padding: 12px 3px 4px">
+                  <label for="floorTextureScale">Tile size</label>
+                  <input id="floorTextureScale" type="range" min="40" max="500" step="10" value="180" style="width: 100%" />
+                  <small>Drag left for smaller tiles, right for larger tiles.</small>
+                </div>
               </div>
             </div>
           </div>
@@ -123,8 +142,70 @@
                     <img alt="Thumbnail light brick" src="rooms/thumbnails/thumbnail_light_brick.jpg" />
                   </a>
                 </div>
+                <div class="col-sm-6" style="padding: 3px">
+                  <a href="#" class="thumbnail texture-select-thumbnail" texture-url="rooms/textures/paint-white.png" texture-stretch="true" texture-scale="1">
+                    <img alt="White paint" src="rooms/thumbnails/thumbnail_paint-white.png" />
+                  </a>
+                </div>
+                <div class="col-sm-6" style="padding: 3px">
+                  <a href="#" class="thumbnail texture-select-thumbnail" texture-url="rooms/textures/paint-warm-white.png" texture-stretch="true" texture-scale="1">
+                    <img alt="Warm white paint" src="rooms/thumbnails/thumbnail_paint-warm-white.png" />
+                  </a>
+                </div>
+                <div class="col-sm-6" style="padding: 3px">
+                  <a href="#" class="thumbnail texture-select-thumbnail" texture-url="rooms/textures/paint-sage.png" texture-stretch="true" texture-scale="1">
+                    <img alt="Sage paint" src="rooms/thumbnails/thumbnail_paint-sage.png" />
+                  </a>
+                </div>
+                <div class="col-sm-6" style="padding: 3px">
+                  <a href="#" class="thumbnail texture-select-thumbnail" texture-url="rooms/textures/paint-blue.png" texture-stretch="true" texture-scale="1">
+                    <img alt="Pale blue paint" src="rooms/thumbnails/thumbnail_paint-blue.png" />
+                  </a>
+                </div>
               </div>
             </div>
+          </div>
+
+          <!-- Image-to-3D / floorplan / design studio -->
+          <div id="asset-studio" style="display:none; padding: 0 20px">
+            <div class="panel panel-default">
+              <div class="panel-heading">AI Studio</div>
+              <div class="panel-body" style="color: #333333">
+                <p class="text-muted" style="font-size: 12px">
+                  Upload an image and track the local or GPU job here. The current UI can be connected to a local Python or Kaggle worker.
+                </p>
+                <div class="form-group">
+                  <label for="studio-workflow">Workflow</label>
+                  <select id="studio-workflow" class="form-control">
+                    <option value="asset">Image &rarr; 3D asset (GLB)</option>
+                    <option value="floorplan">Image &rarr; floorplan</option>
+                    <option value="design">Image &rarr; room design</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="studio-image">Source image</label>
+                  <input id="studio-image" type="file" class="form-control" accept="image/*" />
+                </div>
+                <div id="studio-preview-wrap" style="display:none; margin-bottom: 10px; text-align:center">
+                  <img id="studio-preview" alt="Selected source" style="max-width:100%; max-height:140px; border:1px solid #ddd; padding:2px" />
+                </div>
+                <button id="studio-start" class="btn btn-primary btn-block" disabled>Start workflow</button>
+                <div style="margin-top: 12px">
+                  <div class="clearfix">
+                    <strong>Job status</strong>
+                    <span id="studio-elapsed" class="pull-right text-muted">0s</span>
+                  </div>
+                  <div class="progress" style="margin: 6px 0">
+                    <div id="studio-progress" class="progress-bar" role="progressbar" style="width:0%">0%</div>
+                  </div>
+                  <p id="studio-status" class="text-muted" style="font-size:12px; margin-bottom:8px">Select an image to begin.</p>
+                  <ol id="studio-stages" style="padding-left: 20px; font-size:12px; margin-bottom:0"></ol>
+                </div>
+              </div>
+            </div>
+            <p class="text-muted" style="font-size:11px">
+              This panel is ready for a worker endpoint. Without one it runs a visible local demo so the workflow can be tested safely.
+            </p>
           </div>
         </div>
 

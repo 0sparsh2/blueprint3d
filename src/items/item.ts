@@ -330,6 +330,11 @@ module BP3D.Items {
 
     /** */
     private objectHalfSize(): THREE.Vector3 {
+      // Geometry bounds are reliable for imported GLB meshes even when the
+      // legacy Three.js Box3 traversal cannot inspect their material wrapper.
+      if (this.geometry && this.geometry.boundingBox) {
+        return this.geometry.boundingBox.max.clone().sub(this.geometry.boundingBox.min).divideScalar(2);
+      }
       var objectBox = new THREE.Box3();
       objectBox.setFromObject(this);
       return objectBox.max.clone().sub(objectBox.min).divideScalar(2);

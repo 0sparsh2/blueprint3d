@@ -6,6 +6,11 @@ build
 *.sublime-project
 *.log
 
+# Local GPU runs and model checkouts are reproducible but too large or
+# machine-specific for the application repository.
+kaggle/output/
+hunyuan3d-mlx/
+
 .vscode
 bin
 doc

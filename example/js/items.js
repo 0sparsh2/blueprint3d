@@ -3,6 +3,20 @@
 $(document).ready(function() {
   var items = [
    {
+      "name" : "Nesting Tables - Marble & Gold",
+      "image" : "models/thumbnails/thumbnail_nesting-tables.png",
+      "model" : "models/ai/nesting-tables.glb",
+      "scale" : "40",
+      "type" : "1"
+    },
+   {
+      "name" : "AI Sofa - Blue Fabric",
+      "image" : "models/thumbnails/thumbnail_ai-sofa.png",
+      "model" : "models/ai/blue-fabric-sofa.glb",
+      "scale" : "40",
+      "type" : "1"
+    },
+   {
       "name" : "Closed Door",
       "image" : "models/thumbnails/thumbnail_Screen_Shot_2014-10-27_at_8.04.12_PM.png",
       "model" : "models/js/closed-door28x80_baked.js",
@@ -174,6 +188,8 @@ $(document).ready(function() {
                 item.model +
                 '" model-type="' +
                 item.type + 
+                '" model-scale="' +
+                (item.scale || '') +
                 '"><img src="' +
                 item.image + 
                 '" alt="Add Item"> '+

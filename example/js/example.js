@@ -205,7 +205,8 @@ var SideMenu = function(blueprint3d, floorplanControls, modalEffects) {
   var tabs = {
     "FLOORPLAN" : $("#floorplan_tab"),
     "SHOP" : $("#items_tab"),
-    "DESIGN" : $("#design_tab")
+    "DESIGN" : $("#design_tab"),
+    "STUDIO" : $("#studio_tab")
   }
 
   var scope = this;
@@ -223,6 +224,10 @@ var SideMenu = function(blueprint3d, floorplanControls, modalEffects) {
     "SHOP" : {
       "div" : $("#add-items"),
       "tab" : tabs.SHOP
+    },
+    "STUDIO" : {
+      "div" : $("#asset-studio"),
+      "tab" : tabs.STUDIO
     }
   }
 
@@ -331,10 +336,13 @@ var SideMenu = function(blueprint3d, floorplanControls, modalEffects) {
         itemName: $(this).attr("model-name"),
         resizable: true,
         modelUrl: modelUrl,
+        defaultScale: parseFloat($(this).attr("model-scale")) || (/\.glb$/i.test(modelUrl) ? 40 : null),
         itemType: itemType
       }
 
-      blueprint3d.model.scene.addItem(itemType, modelUrl, metadata);
+      var scaleValue = metadata.defaultScale || (/\.glb$/i.test(modelUrl) ? 40 : null);
+      var initialScale = scaleValue ? new THREE.Vector3(scaleValue, scaleValue, scaleValue) : null;
+      blueprint3d.model.scene.addItem(itemType, modelUrl, metadata, null, 0, initialScale);
       setCurrentState(scope.states.DEFAULT);
     });
   }
@@ -342,6 +350,138 @@ var SideMenu = function(blueprint3d, floorplanControls, modalEffects) {
   init();
 
 }
+
+/*
+ * AI Studio
+ *
+ * The browser owns the upload and job presentation. A worker can be attached
+ * by setting window.BLUEPRINT3D_AI_ENDPOINT to a POST /api/jobs endpoint that
+ * returns {id}, followed by GET /api/jobs/:id returning stage/progress/status.
+ * The fallback demo keeps the UX testable when no GPU worker is running.
+ */
+var AssetStudio = function() {
+  var endpoint = window.BLUEPRINT3D_AI_ENDPOINT || "";
+  var file = null;
+  var objectUrl = null;
+  var timer = null;
+  var startedAt = 0;
+  var stageIndex = 0;
+  var stages = [];
+
+  var workflows = {
+    asset: ["Upload image", "Remove background", "Generate shape", "Generate texture", "Save GLB asset"],
+    floorplan: ["Upload image", "Detect walls and openings", "Estimate dimensions", "Build editable floorplan", "Open floorplanner"],
+    design: ["Upload image", "Analyze style and surfaces", "Match catalog assets", "Apply flooring and walls", "Build design draft"]
+  };
+
+  function setStatus(message, className) {
+    $("#studio-status").text(message).removeClass("text-muted text-success text-danger").addClass(className || "text-muted");
+  }
+
+  function renderStages() {
+    var html = "";
+    for (var i = 0; i < stages.length; i++) {
+      var state = i < stageIndex ? "text-success" : (i === stageIndex ? "text-primary" : "text-muted");
+      var marker = i < stageIndex ? "&#10003; " : (i === stageIndex ? "&#9654; " : "");
+      html += "<li class='" + state + "'>" + marker + stages[i] + "</li>";
+    }
+    $("#studio-stages").html(html);
+  }
+
+  function updateProgress(percent) {
+    percent = Math.max(0, Math.min(100, Math.round(percent)));
+    $("#studio-progress").css("width", percent + "%").text(percent + "%");
+  }
+
+  function stopTimer() {
+    if (timer) { window.clearInterval(timer); timer = null; }
+  }
+
+  function startTimer() {
+    stopTimer();
+    startedAt = Date.now();
+    timer = window.setInterval(function() {
+      $("#studio-elapsed").text(Math.floor((Date.now() - startedAt) / 1000) + "s");
+    }, 250);
+  }
+
+  function complete(message) {
+    stageIndex = stages.length;
+    renderStages();
+    updateProgress(100);
+    setStatus(message, "text-success");
+    stopTimer();
+    $("#studio-start").prop("disabled", false).text("Run again");
+    try { localStorage.setItem("blueprint3d.aiStudio.lastJob", JSON.stringify({ workflow: $("#studio-workflow").val(), status: "complete", elapsed: Math.floor((Date.now() - startedAt) / 1000) })); } catch (e) {}
+  }
+
+  function runDemo() {
+    var interval = window.setInterval(function() {
+      stageIndex += 1;
+      renderStages();
+      updateProgress((stageIndex / stages.length) * 100);
+      if (stageIndex >= stages.length) {
+        window.clearInterval(interval);
+        complete("Demo complete. Connect a worker endpoint to generate the real output.");
+      } else {
+        setStatus("Running " + stages[stageIndex] + "...", "text-primary");
+      }
+    }, 850);
+  }
+
+  function pollJob(jobId) {
+    var poll = window.setInterval(function() {
+      $.get(endpoint + "/" + encodeURIComponent(jobId), function(job) {
+        if (job.stageIndex !== undefined) stageIndex = Number(job.stageIndex);
+        if (job.progress !== undefined) updateProgress(job.progress);
+        renderStages();
+        setStatus(job.message || (job.stage || "Processing..."), job.status === "error" ? "text-danger" : "text-primary");
+        if (job.status === "complete" || job.status === "error") {
+          window.clearInterval(poll);
+          if (job.status === "complete") complete(job.message || "Workflow complete.");
+          else { setStatus(job.message || "The worker reported an error.", "text-danger"); stopTimer(); $("#studio-start").prop("disabled", false); }
+        }
+      }).fail(function() {
+        window.clearInterval(poll);
+        setStatus("Worker connection failed. Check the local or Kaggle endpoint.", "text-danger");
+        stopTimer();
+        $("#studio-start").prop("disabled", false);
+      });
+    }, 1000);
+  }
+
+  function start() {
+    if (!file) return;
+    stages = workflows[$("#studio-workflow").val()];
+    stageIndex = 0;
+    renderStages();
+    updateProgress(0);
+    startTimer();
+    $("#studio-start").prop("disabled", true).text("Processing...");
+    setStatus(endpoint ? "Uploading to the worker..." : "Queued in local demo mode...", "text-primary");
+
+    if (!endpoint) { runDemo(); return; }
+    var form = new FormData();
+    form.append("image", file);
+    form.append("workflow", $("#studio-workflow").val());
+    $.ajax({ url: endpoint, method: "POST", data: form, processData: false, contentType: false })
+      .done(function(job) { pollJob(job.id || job.jobId); })
+      .fail(function() { setStatus("Worker upload failed.", "text-danger"); stopTimer(); $("#studio-start").prop("disabled", false); });
+  }
+
+  $("#studio-image").change(function() {
+    file = this.files && this.files[0];
+    if (!file) return;
+    if (objectUrl) window.URL.revokeObjectURL(objectUrl);
+    objectUrl = window.URL.createObjectURL(file);
+    $("#studio-preview").attr("src", objectUrl);
+    $("#studio-preview-wrap").show();
+    $("#studio-start").prop("disabled", false).text("Start workflow");
+    setStatus(file.name + " ready. Choose a workflow and start.", "text-success");
+  });
+  $("#studio-start").click(start);
+  $("#studio-workflow").change(function() { if (file) setStatus("Ready for " + $(this).find(":selected").text() + ".", "text-success"); });
+};
 
 /*
  * Change floor and wall textures
@@ -354,15 +494,22 @@ var TextureSelector = function (blueprint3d, sideMenu) {
   var isAdmin = isAdmin;
 
   var currentTarget = null;
+  var currentFloorTextureUrl = "rooms/textures/marbletiles.jpg";
 
   function initTextureSelectors() {
     $(".texture-select-thumbnail").click(function(e) {
       var textureUrl = $(this).attr("texture-url");
       var textureStretch = ($(this).attr("texture-stretch") == "true");
       var textureScale = parseInt($(this).attr("texture-scale"));
+      if (currentTarget && currentTarget.setTexture) currentFloorTextureUrl = textureUrl;
       currentTarget.setTexture(textureUrl, textureStretch, textureScale);
 
       e.preventDefault();
+    });
+    $("#floorTextureScale").on("input change", function() {
+      if (currentTarget && currentTarget.setTexture) {
+        currentTarget.setTexture(currentFloorTextureUrl, false, parseInt($(this).val()));
+      }
     });
   }
 
@@ -383,6 +530,7 @@ var TextureSelector = function (blueprint3d, sideMenu) {
 
   function floorClicked(room) {
     currentTarget = room;
+    $("#floorTextureScale").val(180);
     $("#wallTextures").hide();  
     $("#floorTexturesDiv").show();  
   }
@@ -524,6 +672,7 @@ $(document).ready(function() {
   var sideMenu = new SideMenu(blueprint3d, viewerFloorplanner, modalEffects);
   var textureSelector = new TextureSelector(blueprint3d, sideMenu);        
   var cameraButtons = new CameraButtons(blueprint3d);
+  var assetStudio = new AssetStudio();
   mainControls(blueprint3d);
 
   // This serialization format needs work
