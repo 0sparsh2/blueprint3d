@@ -471,7 +471,7 @@ var AssetStudio = function() {
         try { if (xhr.responseJSON && xhr.responseJSON.message) message = xhr.responseJSON.message; } catch (e) {}
         setStatus(message, "text-danger");
         stopTimer();
-        $("#studio-start").prop("disabled", false);
+        $("#studio-start").prop("disabled", false).text("Start workflow");
       });
   }
 
