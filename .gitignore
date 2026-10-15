@@ -10,6 +10,7 @@ build
 # machine-specific for the application repository.
 kaggle/output/
 hunyuan3d-mlx/
+ai-worker/__pycache__/
 
 .vscode
 bin
