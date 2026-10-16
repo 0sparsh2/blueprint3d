@@ -17,6 +17,13 @@ $(document).ready(function() {
       "type" : "1"
     },
    {
+      "name" : "AI Sofa - Gray (Kaggle)",
+      "image" : "models/thumbnails/thumbnail_gray_sofa.jpg",
+      "model" : "models/ai/gray_sofa.glb",
+      "scale" : "40",
+      "type" : "1"
+    },
+   {
       "name" : "Closed Door",
       "image" : "models/thumbnails/thumbnail_Screen_Shot_2014-10-27_at_8.04.12_PM.png",
       "model" : "models/js/closed-door28x80_baked.js",
