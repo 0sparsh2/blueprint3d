@@ -1,89 +1,147 @@
-## See it
+# 3D Home
 
-This repository includes an example application built using blueprint3d:
+3D Home is a Blueprint3D interior-design prototype. It combines the original 2D floorplanner and Three.js room editor with named GLB furniture assets, floor and wall materials, and an AI Studio for image-to-3D jobs.
 
-### http://furnishup.github.io/blueprint3d/example/
+The current image-to-3D path uses a local worker and the authenticated Kaggle CLI by default. Kaggle runs Hunyuan3D on an ephemeral NVIDIA GPU, so the Mac does not need to store the multi-gigabyte model or run CUDA. A native Apple MLX backend remains available as an optional local experiment.
 
-## What is this?
+![Blueprint3D local preview](docs/local-preview.jpg)
 
-This is a customizable application built on three.js that allows users to design an interior space such as a home or apartment. Below are screenshots from our Example App (link above). 
+## Run the app locally
 
-1) Create 2D floorplan:
+Requirements: Node.js/npm, Python 3, and a browser.
 
-![floorplan](https://s3.amazonaws.com/furnishup/floorplan.png)
+From the repository root:
 
-2) Add items:
+```sh
+npm install
+npm run build
+npm start
+```
 
-![add_items](https://s3.amazonaws.com/furnishup/add_items.png)
+Open [http://127.0.0.1:8000](http://127.0.0.1:8000). The static server serves the `example/` directory. `npm run build` compiles the TypeScript core and copies the browser bundle.
 
-3) Design in 3D:
+The app has three main editing areas:
 
-![3d_design](https://s3.amazonaws.com/furnishup/design.png)
+- **Edit Floorplan** edits walls and room geometry in 2D.
+- **Design** edits the 3D scene, floor materials, and wall materials.
+- **Add Items** inserts furniture and other catalog assets.
 
-## Developing and Running Locally
+## Run the AI worker
 
-To get started, clone the repository and ensure you npm >= 3 and grunt installed, then run:
+The browser posts AI Studio jobs to `http://127.0.0.1:8001/api/jobs`. Start the worker in a second terminal:
 
-    npm install
-    grunt
+```sh
+npm run start:ai
+```
 
-The latter command generates `example/js/blueprint3d.js` from `src`.
+The worker binds to localhost only. Check it with:
 
-The easiest way to run locally is to run a local server from the `example` directory. There are plenty of options. One uses Python's built in webserver:
+```sh
+curl http://127.0.0.1:8001/health
+```
 
-    cd example
+The default response identifies the active backend and Kaggle kernel. Keep both terminals running while using Image → 3D asset in the UI.
 
-    # Python 2.x
-    python -m SimpleHTTPServer
+## Image → 3D with Kaggle
 
-    # Python 3.x
-    python -m http.server
+The default backend is Kaggle. It uses the account and private resources configured in `kaggle/hunyuan3d-gpu/kernel-metadata.json`:
 
-Then, visit `http://localhost:8000` in your browser.
+- Dataset: `sparshnagpal/furniture-image`
+- Kernel: `sparshnagpal/hunyuan3d-gpu-smoke-test`
+- Machine: NVIDIA Tesla T4
+- Model: Hunyuan3D-2mini shape plus texture pipeline
 
-## Contribute!
+Authenticate once on the machine running the worker:
 
-This project requires a lot more work. In general, it was rushed through various prototype stages, and never refactored as much as it probably should be. We need your help!
+```sh
+kaggle auth login
+kaggle kernels status sparshnagpal/hunyuan3d-gpu-smoke-test
+```
 
-Please contact us if you are interested in contributing.
+When an image is submitted in **AI Studio**, the worker:
 
-### Todos
+1. Saves the upload as a job input.
+2. Versions the private Kaggle dataset with the uploaded image.
+3. Pushes the kernel with `kaggle kernels push`.
+4. Polls the kernel status while the UI displays stage and elapsed time.
+5. Downloads the GLB output with `kaggle kernels output`.
+6. Copies the generated asset to `example/models/ai/<asset-name>.glb`.
 
-- More complete documentation (based on the TypeDoc comments)
-- Test suite (e.g. jasmine)
-- Make it easier to build a complete application using blueprint3d (cleaner API, more inclusive base, easier integration with a backend)
-- Better serialization format for saving/loading "designs"
-- Remove the dependency on jquery from the core source!
-- Better use of npm conventions and packaging
-- Various bug fixes
-- refactor three/* - use of classes, lambdas
-- update to current threejs
-- introduce a more formal persistency format
-- put all relevant settings into Core.Configuration to make them read-/writeable, User settings?
-- complete type docs for all entities
-- there're a few TODO_Ekki's left, kill them all
+The worker uses a single shared Kaggle dataset and kernel. Run one generation at a time; a later job can replace the dataset version used by an earlier job. Kaggle credentials stay in the local Kaggle credential store and are never sent to the browser.
 
-## Directory Structure
+The kernel source is [kaggle/hunyuan3d-gpu/run.py](kaggle/hunyuan3d-gpu/run.py). It removes the source background, generates the shape, runs the texture stage, and writes a GLB. The generated gray sofa was produced through this path and is included in the catalog.
 
-### `src/` Directory
+## Optional local MLX backend
 
-The `src` directory contains the core of the project. Here is a description of the various sub-directories:
+The local backend is useful when the Hunyuan3D-MLX checkpoint is already present on an Apple Silicon machine. It is not required for the default Kaggle flow and its model files are intentionally ignored by Git.
 
-`core` - Basic utilities such as logging and generic functions
+```sh
+AI_BACKEND=mlx npm run start:ai
+```
 
-`floorplanner` - 2D view/controller for editing the floorplan
+The MLX checkout and environment are under the local `hunyuan3d-mlx/` directory. From `hunyuan3d-mlx/python/shape`:
 
-`items` - Various types of items that can go in rooms
+```sh
+uv sync
+./.venv/bin/python scripts/dl_modelscope.py
+```
 
-`model` - Data model representing both the 2D floorplan and all of the items in it
+The checkpoint is several gigabytes and the download is resumable. The local worker uses quantized Hunyuan3D-2mini inference and writes shape GLBs. The Kaggle path is preferred for this project because it avoids local storage and GPU memory requirements.
 
-`three` - 3D view/controller for viewing and modifying item placement
+## Current assets
 
+These assets are checked into the app and appear in **Add Items**:
 
-### `example/` Directory
+| Asset | App file | Source |
+| --- | --- | --- |
+| AI Sofa - Blue Fabric | `example/models/ai/blue-fabric-sofa.glb` | textured furniture GLB |
+| AI Sofa - Gray (Kaggle) | `example/models/ai/gray_sofa.glb` | generated from `gray_sofa.webp` through Kaggle |
+| Nesting Tables - Marble & Gold | `example/models/ai/nesting-tables.glb` | generated through Kaggle |
 
-The example directory contains an application built using the core blueprint3d javascript building blocks. It adds html, css, models, textures, and more javascript to tie everything together.
+Catalog thumbnails are in `example/models/thumbnails/`. Furniture metadata and names are in `example/js/items.js`. GLB loading, material extraction, bounding boxes, and initial scaling are implemented in `src/model/scene.ts` and `src/items/item.ts`.
+
+The example also includes:
+
+- White marble and light wood floors.
+- Adjustable floor texture scale.
+- White, warm white, sage, and pale blue wall paints.
+- Existing Blueprint3D furniture, doors, and windows.
+- A hand-authored two-room import fixture at `example/ai-samples/two-room.blueprint3d`.
+
+## AI Studio workflows
+
+AI Studio currently exposes three workflows:
+
+- **Image → 3D asset (GLB)** is connected to the Kaggle worker.
+- **Image → floorplan** has the upload and job UX; the geometry extraction worker still needs to be connected.
+- **Image → room design** has the upload and job UX; asset retrieval and scene placement are the next backend stage.
+
+The browser job contract is documented in [docs/AI_PIPELINE.md](docs/AI_PIPELINE.md). The worker accepts `POST /api/jobs` with `image` and `workflow`, then the UI polls `GET /api/jobs/:id` for `status`, `stage`, `stageIndex`, `progress`, and `message`.
+
+## Troubleshooting
+
+**The AI Studio says the worker cannot connect**
+
+Make sure `npm run start:ai` is running and check `curl http://127.0.0.1:8001/health`.
+
+**Kaggle says authentication or permission failed**
+
+Run `kaggle auth login` again and confirm the authenticated account can access the private dataset and kernel named in `kernel-metadata.json`.
+
+**A job stays running**
+
+Check `kaggle kernels status sparshnagpal/hunyuan3d-gpu-smoke-test` and the Kaggle kernel logs. The worker is intentionally single-job because the dataset and kernel are shared.
+
+**The new catalog item does not appear**
+
+Reload the app with a cache-busting query, then open **Add Items**. Confirm the GLB exists under `example/models/ai/` and that its entry is present in `example/js/items.js`.
+
+## Repository boundaries
+
+Committed files include application code, documentation, Kaggle scripts, thumbnails, source images needed for the smoke pipeline, and the current generated GLBs. The repository ignores Kaggle outputs, job scratch directories, local MLX checkouts, virtual environments, model weights, and credentials. These files are large or machine-specific and can be regenerated.
+
+More detailed notes are in [docs/AI-INTEGRATION.md](docs/AI-INTEGRATION.md), [docs/FREE-LOCAL-MODELS.md](docs/FREE-LOCAL-MODELS.md), and [ai-worker/README.md](ai-worker/README.md).
 
 ## License
 
-This project is open-source! See LICENSE.txt for more information.
+The original Blueprint3D project is distributed under the terms in [LICENSE.txt](LICENSE.txt). Model and generated-asset licenses must be checked separately before redistribution.
